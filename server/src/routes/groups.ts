@@ -27,19 +27,22 @@ router.post('/', (req: Request, res: Response) => {
 router.put('/:id', (req: Request, res: Response) => {
   const group = db.prepare('SELECT * FROM groups WHERE id = ?').get(req.params.id) as { memberCount: number; status: string } | undefined;
   if (!group) { res.status(404).json({ error: 'Not found' }); return; }
-  const { action, status, name, description, location, meetingDate, organizer } = req.body;
+  const { action, status } = req.body;
   if (action === 'join') {
     db.prepare('UPDATE groups SET memberCount = memberCount + 1 WHERE id = ?').run(req.params.id);
   } else if (status) {
     db.prepare('UPDATE groups SET status = ? WHERE id = ?').run(status, req.params.id);
   } else {
+    const ALLOWED_FIELDS = ['name', 'description', 'location', 'meetingDate', 'organizer'] as const;
+    type AllowedField = typeof ALLOWED_FIELDS[number];
     const updates: string[] = [];
     const values: unknown[] = [];
-    if (name !== undefined) { updates.push('name = ?'); values.push(name); }
-    if (description !== undefined) { updates.push('description = ?'); values.push(description); }
-    if (location !== undefined) { updates.push('location = ?'); values.push(location); }
-    if (meetingDate !== undefined) { updates.push('meetingDate = ?'); values.push(meetingDate); }
-    if (organizer !== undefined) { updates.push('organizer = ?'); values.push(organizer); }
+    for (const field of ALLOWED_FIELDS) {
+      if (req.body[field] !== undefined) {
+        updates.push(`${field} = ?`);
+        values.push(req.body[field] as AllowedField);
+      }
+    }
     if (updates.length > 0) {
       values.push(req.params.id);
       db.prepare(`UPDATE groups SET ${updates.join(', ')} WHERE id = ?`).run(values);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import apiClient from '../../api/client';
 import { Upload, Marker, Group } from '../../types';
 import './MediaUpload.css';
@@ -18,6 +18,7 @@ export default function MediaUpload() {
   const [groupId, setGroupId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -52,7 +53,7 @@ export default function MediaUpload() {
       setFile(null);
       setMarkerId('');
       setGroupId('');
-      (document.getElementById('file-input') as HTMLInputElement).value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
       await fetchAll();
     } catch {
       setError('Upload failed. Please try again.');
@@ -79,7 +80,7 @@ export default function MediaUpload() {
           <div className="form-group">
             <label>File (image or video)</label>
             <input
-              id="file-input"
+              ref={fileInputRef}
               type="file"
               accept="image/*,video/*"
               onChange={e => setFile(e.target.files?.[0] || null)}

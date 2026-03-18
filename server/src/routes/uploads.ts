@@ -40,15 +40,8 @@ router.get('/', (_req: Request, res: Response) => {
 });
 
 router.get('/file/:filename', (req: Request, res: Response) => {
-  const filename = req.params.filename;
-  // Reject filenames with path traversal sequences
-  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-    res.status(400).json({ error: 'Invalid filename' });
-    return;
-  }
-  const filePath = path.resolve(uploadsDir, filename);
-  // Ensure the resolved path is still within uploadsDir
-  if (!filePath.startsWith(uploadsDir + path.sep) && filePath !== uploadsDir) {
+  const filePath = path.resolve(uploadsDir, req.params.filename);
+  if (!filePath.startsWith(uploadsDir + path.sep)) {
     res.status(400).json({ error: 'Invalid filename' });
     return;
   }
