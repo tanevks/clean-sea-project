@@ -13,7 +13,7 @@ export default function Chat() {
   const fetchMessages = useCallback(async () => {
     try {
       const res = await apiClient.get<Message[]>('/messages');
-      setMessages(res.data.reverse());
+      setMessages([...res.data].reverse());
     } catch (err) {
       console.error('Failed to fetch messages', err);
     }
