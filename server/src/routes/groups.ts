@@ -42,8 +42,7 @@ router.put('/:id', (req: Request, res: Response) => {
     if (organizer !== undefined) { updates.push('organizer = ?'); values.push(organizer); }
     if (updates.length > 0) {
       values.push(req.params.id);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (db.prepare(`UPDATE groups SET ${updates.join(', ')} WHERE id = ?`) as any).run(...values);
+      db.prepare(`UPDATE groups SET ${updates.join(', ')} WHERE id = ?`).run(values);
     }
   }
   const updated = db.prepare('SELECT * FROM groups WHERE id = ?').get(req.params.id);
