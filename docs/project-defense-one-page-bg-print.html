@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="bg">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clean Sea - Кратко представяне за защита</title>
+    <style>
+      :root {
+        --text: #172033;
+        --muted: #5b6475;
+        --line: #d7dde7;
+        --accent: #0b6bcb;
+        --surface: #ffffff;
+        --bg: #eef3f8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Aptos", "Segoe UI", Calibri, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto;
+        padding: 16mm 15mm 16mm 15mm;
+        background: var(--surface);
+      }
+
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        padding: 14px;
+        background: rgba(238, 243, 248, 0.95);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(8px);
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid #c2cede;
+        background: #ffffff;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #ffffff;
+      }
+
+      .header {
+        border-bottom: 2px solid var(--accent);
+        padding-bottom: 10mm;
+        margin-bottom: 8mm;
+      }
+
+      .project {
+        margin: 0 0 4mm 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1 {
+        margin: 0 0 3mm 0;
+        font-size: 26px;
+        line-height: 1.18;
+      }
+
+      .subtitle {
+        margin: 0;
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 7mm 0 8mm 0;
+      }
+
+      .meta-card {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+
+      .meta-label {
+        margin-bottom: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .meta-value {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .section {
+        margin-bottom: 6mm;
+      }
+
+      h2 {
+        margin: 0 0 3mm 0;
+        font-size: 15px;
+        line-height: 1.25;
+        color: var(--accent);
+      }
+
+      p,
+      li {
+        font-size: 12.5px;
+        line-height: 1.5;
+      }
+
+      p {
+        margin: 0 0 3mm 0;
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      li + li {
+        margin-top: 2px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10mm;
+      }
+
+      .highlight {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--accent);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: #f9fbfe;
+      }
+
+      .footer {
+        margin-top: 9mm;
+        padding-top: 4mm;
+        border-top: 1px solid var(--line);
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+        }
+
+        .toolbar {
+          display: none !important;
+        }
+
+        .page {
+          width: auto;
+          min-height: auto;
+          margin: 0;
+          padding: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button class="button primary" onclick="window.print()">Печат / PDF</button>
+      <a class="button" href="./project-defense-one-page-bg.md">Отвори Markdown</a>
+    </div>
+
+    <main class="page">
+      <header class="header">
+        <p class="project">Проект Clean Sea</p>
+        <h1>Кратко представяне за защита на проекта</h1>
+        <p class="subtitle">
+          Уеб и мобилна система за подаване на сигнали, организиране на почиствания,
+          обсъждане на идеи и инициативи, както и за публична статистика и отчетност.
+        </p>
+      </header>
+
+      <section class="meta">
+        <div class="meta-card">
+          <div class="meta-label">Документ</div>
+          <div class="meta-value">Кратко представяне</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Версия</div>
+          <div class="meta-value">03.04.2026</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Формат</div>
+          <div class="meta-value">Готов за Word / PDF</div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>1. Основна идея</h2>
+        <p>
+          <strong>Clean Sea</strong> е цялостна среда, която помага да се откриват,
+          обсъждат, планират и отчитат екологични проблеми и инициативи. Системата
+          свързва граждани, ученици, модератори и администратори в един общ процес.
+        </p>
+      </section>
+
+      <section class="section grid">
+        <div>
+          <h2>2. Основни модули</h2>
+          <ul>
+            <li>Публичен dashboard със статистика</li>
+            <li>Карта на сигналите</li>
+            <li>Мобилно подаване на нов сигнал</li>
+            <li>Чат по сигнали</li>
+            <li>Планиране на почиствания</li>
+            <li>Записване на участници</li>
+            <li>Идеи и инициативи с публично обсъждане</li>
+            <li>План и доклад за реализация</li>
+          </ul>
+        </div>
+        <div>
+          <h2>3. Основни роли</h2>
+          <ul>
+            <li><strong>Гост</strong> - разглежда публична информация</li>
+            <li><strong>Потребител</strong> - подава сигнали и коментира</li>
+            <li><strong>Модератор</strong> - преглежда и организира процеса</li>
+            <li><strong>Администратор</strong> - управлява цялата система</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>4. Как работи системата</h2>
+        <div class="grid">
+          <div class="highlight">
+            <p><strong>При сигнали:</strong></p>
+            <ol>
+              <li>Потребител подава сигнал.</li>
+              <li>Модератор го преглежда.</li>
+              <li>Сигналът става публичен.</li>
+              <li>Организира се почистване.</li>
+              <li>Записват се участници.</li>
+              <li>Качват се доказателства след почистване.</li>
+              <li>Сигналът се отчита като решен.</li>
+            </ol>
+          </div>
+          <div class="highlight">
+            <p><strong>При идеи и инициативи:</strong></p>
+            <ol>
+              <li>Потребител подава идея или инициатива.</li>
+              <li>Тя става публична за обсъждане.</li>
+              <li>При одобрение се публикува план.</li>
+              <li>По време на реализацията има коментари.</li>
+              <li>След приключване се публикува доклад.</li>
+              <li>Инициативата се отчита като изпълнена.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>5. Силни страни на проекта</h2>
+        <ul>
+          <li>Съчетава web и mobile приложение</li>
+          <li>Използва роли и права за достъп</li>
+          <li>Има реална логика за модерация и проследяване</li>
+          <li>Поддържа райони на действие чрез полигони върху карта</li>
+          <li>Позволява организиране на реални почиствания</li>
+          <li>Има публична статистика и печатни отчети</li>
+          <li>Поддържа отделен модул за идеи и инициативи</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>6. Практическа полза</h2>
+        <p>
+          Системата може да се използва в училище, община, екологични кампании и
+          местни граждански инициативи. Тя помага за откриване на проблеми,
+          координация между участници, проследяване на резултати и отчетност.
+        </p>
+      </section>
+
+      <section class="section">
+        <h2>7. Заключение</h2>
+        <p>
+          <strong>Clean Sea</strong> не е само система за подаване на сигнали.
+          Това е пълен процес от откриване на проблем, през обсъждане и организация,
+          до изпълнение, доказване на резултата и статистически отчет.
+        </p>
+      </section>
+
+      <footer class="footer">
+        Документът е подготвен за директен печат или запис като PDF.
+      </footer>
+    </main>
+  </body>
+</html>

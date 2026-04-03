@@ -1,0 +1,455 @@
+openapi: 3.0.3
+info:
+  title: Clean Sea API
+  version: 0.2.0
+  description: |
+    MVP API for mobile app, web portal, and chat channels.
+    Authentication (sign up, sign in, OAuth Google, forgot password) is handled directly by Supabase Auth.
+servers:
+  - url: https://api.cleansea.example.com
+tags:
+  - name: Auth
+  - name: Uploads
+  - name: Reports
+  - name: Moderation
+  - name: Chat
+security:
+  - bearerAuth: []
+
+paths:
+  /v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      responses:
+        '200':
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+    patch:
+      tags: [Auth]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  maxLength: 120
+                avatarUrl:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  /v1/uploads/presign:
+    post:
+      tags: [Uploads]
+      summary: Get presigned URL for image/video upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileName, contentType, mediaType, sizeBytes]
+              properties:
+                fileName:
+                  type: string
+                contentType:
+                  type: string
+                mediaType:
+                  type: string
+                  enum: [image, video]
+                sizeBytes:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Presigned upload
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [uploadId, bucket, uploadUrl, uploadToken, storageKey]
+                properties:
+                  uploadId:
+                    type: string
+                    format: uuid
+                  bucket:
+                    type: string
+                  uploadUrl:
+                    type: string
+                  uploadToken:
+                    type: string
+                  storageKey:
+                    type: string
+
+  /v1/reports:
+    post:
+      tags: [Reports]
+      summary: Publish new pollution report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReportRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '400':
+          description: Validation error
+    get:
+      tags: [Reports]
+      summary: List reports for map/feed
+      parameters:
+        - in: query
+          name: minLat
+          schema: { type: number }
+        - in: query
+          name: minLng
+          schema: { type: number }
+        - in: query
+          name: maxLat
+          schema: { type: number }
+        - in: query
+          name: maxLng
+          schema: { type: number }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [new, in_review, planned_cleanup, resolved, rejected]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reports list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Report'
+                  nextCursor:
+                    type: string
+                    nullable: true
+
+  /v1/reports/{reportId}:
+    get:
+      tags: [Reports]
+      summary: Get report details
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      responses:
+        '200':
+          description: Report detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          description: Not found
+
+  /v1/reports/{reportId}/comments:
+    post:
+      tags: [Reports]
+      summary: Add report comment
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 1000
+                visibility:
+                  type: string
+                  enum: [public, internal]
+                  default: public
+      responses:
+        '201':
+          description: Comment created
+
+  /v1/moderation/reports/{reportId}/status:
+    patch:
+      tags: [Moderation]
+      summary: Update report status (web moderation)
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [new, in_review, planned_cleanup, resolved, rejected]
+                note:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '403':
+          description: Forbidden
+
+  /v1/chat/webhook/telegram:
+    post:
+      tags: [Chat]
+      summary: Inbound webhook from Telegram bot
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Accepted
+
+  /v1/chat/reports/{reportId}/notify:
+    post:
+      tags: [Chat]
+      summary: Send status update message to chat user
+      parameters:
+        - $ref: '#/components/parameters/ReportId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel, externalUserId, message]
+              properties:
+                channel:
+                  type: string
+                  enum: [telegram, viber, whatsapp, webchat]
+                externalUserId:
+                  type: string
+                message:
+                  type: string
+      responses:
+        '202':
+          description: Queued
+
+components:
+  parameters:
+    ReportId:
+      in: path
+      name: reportId
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    User:
+      type: object
+      required: [id, role]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+          nullable: true
+        role:
+          type: string
+          enum: [citizen, moderator, admin]
+        displayName:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+
+    CreateReportRequest:
+      type: object
+      required: [description, location]
+      properties:
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          minLength: 5
+          maxLength: 500
+        location:
+          type: object
+          required: [latitude, longitude]
+          properties:
+            latitude:
+              type: number
+              minimum: -90
+              maximum: 90
+            longitude:
+              type: number
+              minimum: -180
+              maximum: 180
+            accuracyMeters:
+              type: number
+              minimum: 0
+        media:
+          type: array
+          minItems: 0
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/CreateMediaItem'
+        source:
+          type: string
+          enum: [mobile, web, chat]
+          default: mobile
+
+    CreateMediaItem:
+      type: object
+      required: [storageKey, mediaType, mimeType, sizeBytes]
+      properties:
+        storageKey:
+          type: string
+        mediaType:
+          type: string
+          enum: [image, video]
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 1
+        widthPx:
+          type: integer
+          minimum: 1
+        heightPx:
+          type: integer
+          minimum: 1
+        durationSeconds:
+          type: integer
+          minimum: 1
+
+    Report:
+      type: object
+      required:
+        - id
+        - status
+        - source
+        - description
+        - location
+        - media
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [new, in_review, planned_cleanup, resolved, rejected]
+        source:
+          type: string
+          enum: [mobile, web, chat]
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+        location:
+          type: object
+          required: [latitude, longitude]
+          properties:
+            latitude: { type: number }
+            longitude: { type: number }
+            accuracyMeters: { type: number, nullable: true }
+            addressText: { type: string, nullable: true }
+        media:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+        createdBy:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Media:
+      type: object
+      required: [id, mediaType, url]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mediaType:
+          type: string
+          enum: [image, video]
+        url:
+          type: string
+        thumbnailUrl:
+          type: string
+          nullable: true
+        widthPx:
+          type: integer
+          nullable: true
+        heightPx:
+          type: integer
+          nullable: true
+        durationSeconds:
+          type: integer
+          nullable: true
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

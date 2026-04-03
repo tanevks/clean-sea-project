@@ -1,0 +1,25 @@
+{
+  "name": "@clean-sea/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.0",
+    "expo": "^55.0.0",
+    "expo-file-system": "~55.0.11",
+    "expo-image-picker": "~55.0.13",
+    "expo-linking": "^8.0.0",
+    "expo-location": "^19.0.0",
+    "expo-web-browser": "^15.0.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-native": "0.82.1",
+    "react-native-maps": "1.26.20",
+    "react-native-webview": "^13.16.0"
+  }
+}

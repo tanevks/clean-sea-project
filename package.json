@@ -1,0 +1,19 @@
+{
+  "name": "clean-sea-project",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "overrides": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-native": "0.82.1"
+  },
+  "scripts": {
+    "dev:mobile": "npm run dev -w @clean-sea/mobile",
+    "dev:web": "npm run dev -w @clean-sea/web",
+    "dev:api": "npm run dev -w @clean-sea/api",
+    "typecheck:api": "npm run typecheck -w @clean-sea/api"
+  }
+}
