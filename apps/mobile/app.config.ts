@@ -2,6 +2,15 @@ import "dotenv/config";
 import type { ExpoConfig } from "expo/config";
 
 const androidGoogleMapsApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
+const mapsPlugin: [string, { androidGoogleMapsApiKey: string }] | null =
+  androidGoogleMapsApiKey
+    ? [
+        "react-native-maps",
+        {
+          androidGoogleMapsApiKey
+        }
+      ]
+    : null;
 
 const config: ExpoConfig = {
   name: "Clean Sea Mobile",
@@ -20,16 +29,7 @@ const config: ExpoConfig = {
         cameraPermission: "Allow Clean Sea to use your camera."
       }
     ],
-    ...(androidGoogleMapsApiKey
-      ? [
-          [
-            "react-native-maps",
-            {
-              androidGoogleMapsApiKey
-            }
-          ] as const
-        ]
-      : [])
+    ...(mapsPlugin ? [mapsPlugin] : [])
   ],
   splash: {
     image: "./assets/splash.png",
@@ -46,7 +46,7 @@ const config: ExpoConfig = {
       backgroundColor: "#ffffff"
     },
     package: "com.tanev.cleanseamobile"
-  },
+  } as ExpoConfig["android"] & { usesCleartextTraffic?: boolean },
   extra: {
     eas: {
       projectId: "9ff4de06-d1aa-4f9b-9222-ae813c1d33f0"

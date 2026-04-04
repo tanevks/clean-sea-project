@@ -7,12 +7,15 @@
     "strict": true,
     "skipLibCheck": true,
     "types": [
+      "node",
       "react",
       "react-native"
     ]
   },
   "include": [
-    "src"
+    "src",
+    "index.ts",
+    "app.config.ts"
   ],
   "extends": "expo/tsconfig.base"
 }
