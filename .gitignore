@@ -4,6 +4,11 @@ node_modules
 .next
 .expo
 **/.expo
+**/.gradle
+**/build
+**/.cxx
+**/.idea
+**/local.properties
 dist
 coverage
 npm-debug.log*

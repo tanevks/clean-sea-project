@@ -1,6 +1,14 @@
 import { supabase } from "./supabase";
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+function getApiBaseUrl() {
+  if (!apiBaseUrl) {
+    throw new Error("Missing NEXT_PUBLIC_API_BASE_URL");
+  }
+
+  return apiBaseUrl;
+}
 
 export type PublicPeriod = "all" | "year" | "season";
 export type PublicMapMetric =
@@ -491,8 +499,9 @@ function formatApiDetails(details: unknown): string {
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const baseUrl = getApiBaseUrl();
   const accessToken = await getAccessToken();
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers: {
       ...(init?.headers ?? {}),
@@ -518,7 +527,8 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function fetchPublicJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, init);
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}${path}`, init);
   const bodyText = await response.text();
   const json = bodyText
     ? (JSON.parse(bodyText) as { error?: string; details?: string })
@@ -589,12 +599,13 @@ export async function fetchPublicActivity(period: PublicPeriod, campaignId?: str
 }
 
 export function getPublicExportUrl(period: PublicPeriod, campaignId?: string) {
+  const baseUrl = getApiBaseUrl();
   const params = new URLSearchParams({ period });
   if (campaignId) {
     params.set("campaignId", campaignId);
   }
 
-  return `${apiBaseUrl}/v1/public/export.csv?${params.toString()}`;
+  return `${baseUrl}/v1/public/export.csv?${params.toString()}`;
 }
 
 export function getPublicPrintUrl(period: PublicPeriod, campaignId?: string) {

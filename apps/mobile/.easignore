@@ -1,0 +1,17 @@
+# Dependencies are restored during EAS build
+node_modules
+
+# Expo/local caches
+.expo
+.expo-shared
+
+# Android generated/native build artifacts
+android/.gradle
+android/build
+android/app/build
+android/app/.cxx
+android/.idea
+android/local.properties
+
+# Local env files are not needed on remote EAS when using EAS env vars
+.env

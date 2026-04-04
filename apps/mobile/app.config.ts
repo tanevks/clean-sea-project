@@ -48,6 +48,9 @@ const config: ExpoConfig = {
     package: "com.tanev.cleanseamobile"
   },
   extra: {
+    eas: {
+      projectId: "9ff4de06-d1aa-4f9b-9222-ae813c1d33f0"
+    },
     hasGoogleMapsAndroidApiKey: Boolean(androidGoogleMapsApiKey)
   },
   web: {
