@@ -161,7 +161,7 @@ authRouter.get("/me", authGuard, async (req, res) => {
 
   let { data, error } = await supabaseAdmin
     .from("profiles")
-    .select("id, role, display_name, avatar_url, phone")
+    .select("id, role, display_name, avatar_url, phone, is_active, approval_status")
     .eq("id", userId)
     .maybeSingle();
 
@@ -181,9 +181,11 @@ authRouter.get("/me", authGuard, async (req, res) => {
       .insert({
         id: userId,
         role: req.authUser!.role,
-        display_name: fallbackDisplayName
+        display_name: fallbackDisplayName,
+        is_active: req.authUser!.isActive,
+        approval_status: req.authUser!.approvalStatus
       })
-      .select("id, role, display_name, avatar_url, phone")
+      .select("id, role, display_name, avatar_url, phone, is_active, approval_status")
       .single();
 
     if (inserted.error) {
@@ -205,7 +207,9 @@ authRouter.get("/me", authGuard, async (req, res) => {
     nickname: data.display_name,
     avatarUrl: data.avatar_url,
     phone: data.phone,
-    contactPhone: data.phone
+    contactPhone: data.phone,
+    isActive: data.is_active,
+    approvalStatus: data.approval_status
   });
 });
 
@@ -244,7 +248,7 @@ authRouter.patch("/me", authGuard, async (req, res) => {
     .from("profiles")
     .update(updatePayload)
     .eq("id", req.authUser!.id)
-    .select("id, role, display_name, avatar_url, phone")
+    .select("id, role, display_name, avatar_url, phone, is_active, approval_status")
     .single();
 
   if (error) {
@@ -267,6 +271,8 @@ authRouter.patch("/me", authGuard, async (req, res) => {
     nickname: data.display_name,
     avatarUrl: data.avatar_url,
     phone: data.phone,
-    contactPhone: data.phone
+    contactPhone: data.phone,
+    isActive: data.is_active,
+    approvalStatus: data.approval_status
   });
 });

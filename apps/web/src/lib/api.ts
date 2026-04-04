@@ -25,6 +25,8 @@ export type ProfileResponse = {
   id: string;
   email: string | null;
   role: "citizen" | "moderator" | "admin";
+  approvalStatus: "pending" | "approved" | "rejected";
+  isActive: boolean;
   displayName?: string | null;
   nickname?: string | null;
   avatarUrl?: string | null;
@@ -36,6 +38,7 @@ export type AdminUserItem = {
   id: string;
   email: string | null;
   role: "citizen" | "moderator" | "admin";
+  approvalStatus: "pending" | "approved" | "rejected";
   displayName: string | null;
   phone: string | null;
   isActive: boolean;
@@ -960,6 +963,19 @@ export async function updateAdminUserActiveState(
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ isActive })
+  });
+}
+
+export async function updateAdminUserApprovalStatus(
+  userId: string,
+  approvalStatus: AdminUserItem["approvalStatus"]
+) {
+  return fetchJson<AdminUserItem>(`/v1/admin/users/${userId}/approval`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ approvalStatus })
   });
 }
 

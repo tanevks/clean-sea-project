@@ -6,10 +6,9 @@ import { authStyles } from "./styles";
 
 type Props = {
   onBackToLogin: () => void;
-  onSignedUp: () => void;
 };
 
-export function SignUpScreen({ onBackToLogin, onSignedUp }: Props) {
+export function SignUpScreen({ onBackToLogin }: Props) {
   const { t } = useI18n();
   const [nickname, setNickname] = useState("");
   const [phone, setPhone] = useState("");
@@ -51,11 +50,11 @@ export function SignUpScreen({ onBackToLogin, onSignedUp }: Props) {
     }
 
     if (hasSession) {
-      onSignedUp();
+      setMessage("Профилът е създаден и очаква одобрение от администратор.");
       return;
     }
 
-    setMessage(t.auth.signUpCheckEmail);
+    setMessage("Профилът е създаден и очаква одобрение от администратор.");
   }
 
   async function onGoogleSignUp() {
@@ -78,7 +77,7 @@ export function SignUpScreen({ onBackToLogin, onSignedUp }: Props) {
       return;
     }
 
-    onSignedUp();
+    setMessage("Профилът е създаден и очаква одобрение от администратор.");
   }
 
   return (

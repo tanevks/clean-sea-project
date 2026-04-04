@@ -10,6 +10,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
         CREATE TYPE user_role AS ENUM ('citizen', 'moderator', 'admin');
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'approval_status') THEN
+        CREATE TYPE approval_status AS ENUM ('pending', 'approved', 'rejected');
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'report_status') THEN
         CREATE TYPE report_status AS ENUM ('new', 'in_review', 'planned_cleanup', 'resolved', 'rejected');
     END IF;
@@ -44,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     avatar_url TEXT,
     phone TEXT,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    approval_status approval_status NOT NULL DEFAULT 'approved',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -61,7 +65,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (id, display_name, avatar_url, phone)
+  INSERT INTO public.profiles (id, display_name, avatar_url, phone, is_active, approval_status)
   VALUES (
     NEW.id,
     COALESCE(
@@ -70,7 +74,9 @@ BEGIN
       split_part(NEW.email, '@', 1)
     ),
     NEW.raw_user_meta_data->>'avatar_url',
-    NEW.raw_user_meta_data->>'phone'
+    NEW.raw_user_meta_data->>'phone',
+    FALSE,
+    'pending'
   )
   ON CONFLICT (id) DO NOTHING;
 
@@ -255,6 +261,42 @@ CREATE TABLE IF NOT EXISTS moderation_audit_log (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE OR REPLACE FUNCTION public.notify_admins_about_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.approval_status <> 'pending' THEN
+    RETURN NEW;
+  END IF;
+
+  INSERT INTO public.user_notifications (user_id, type, title, body, metadata)
+  SELECT
+    admin_profile.id,
+    'user_approval_required',
+    'New user approval required',
+    COALESCE(NEW.display_name, 'A new user') || ' is waiting for approval.',
+    jsonb_build_object(
+      'userId', NEW.id,
+      'displayName', NEW.display_name
+    )
+  FROM public.profiles admin_profile
+  WHERE admin_profile.role = 'admin'
+    AND COALESCE(admin_profile.is_active, true) = true
+    AND COALESCE(admin_profile.approval_status, 'approved') = 'approved';
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_profiles_notify_admin_on_pending ON public.profiles;
+CREATE TRIGGER trg_profiles_notify_admin_on_pending
+AFTER INSERT ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.notify_admins_about_new_user();
+
 CREATE TABLE IF NOT EXISTS initiative_submissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     submitter_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -355,6 +397,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.set_updated_at();
 
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_approval_status ON public.profiles(approval_status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 CREATE INDEX IF NOT EXISTS idx_reports_created_at ON reports(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_reports_location_gist ON reports USING GIST(location);

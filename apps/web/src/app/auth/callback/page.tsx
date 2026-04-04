@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { fetchMe } from "../../../lib/api";
 import { useWebI18n } from "../../../lib/i18n";
 import { supabase } from "../../../lib/supabase";
 
@@ -12,7 +13,23 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const run = async () => {
       await supabase.auth.getSession();
-      router.replace("/");
+
+      try {
+        await fetchMe();
+        router.replace("/");
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message.includes("Account approval is pending.")
+            ? "Профилът ви очаква одобрение от администратор."
+            : error instanceof Error && error.message.includes("Account access was rejected.")
+              ? "Достъпът до профила ви не е одобрен."
+              : error instanceof Error && error.message.includes("Account is inactive.")
+                ? "Профилът е деактивиран."
+                : "Входът не можа да бъде завършен.";
+
+        await supabase.auth.signOut();
+        router.replace(`/auth/login?notice=${encodeURIComponent(message)}`);
+      }
     };
     void run();
   }, [router]);

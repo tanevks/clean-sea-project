@@ -4,8 +4,15 @@ import * as WebBrowser from "expo-web-browser";
 import type { AuthError, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
-const authCallbackUrl = "cleansea://auth/callback";
-const resetPasswordUrl = "cleansea://auth/reset-password";
+const appAuthCallbackUrl = "cleansea://auth/callback";
+const appResetPasswordUrl = "cleansea://auth/reset-password";
+const webBaseUrl = process.env.EXPO_PUBLIC_WEB_BASE_URL?.replace(/\/+$/, "");
+const authCallbackUrl = webBaseUrl
+  ? `${webBaseUrl}/auth/mobile-callback`
+  : appAuthCallbackUrl;
+const resetPasswordUrl = webBaseUrl
+  ? `${webBaseUrl}/auth/mobile-reset-password`
+  : appResetPasswordUrl;
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -166,10 +173,14 @@ export async function signUpWithEmail(
     }
   });
 
+  if (data.session) {
+    await supabase.auth.signOut();
+  }
+
   return {
     user: data.user,
     error,
-    hasSession: Boolean(data.session)
+    hasSession: false
   };
 }
 
@@ -221,7 +232,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
   const authSession = await WebBrowser.openAuthSessionAsync(
     data.url,
-    authCallbackUrl
+    appAuthCallbackUrl
   );
 
   if (authSession.type === "success" && authSession.url) {

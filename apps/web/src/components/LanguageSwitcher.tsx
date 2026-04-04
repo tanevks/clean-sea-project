@@ -103,7 +103,23 @@ export function LanguageSwitcher() {
           setRole(profile.role);
         }
       })
-      .catch(() => {
+      .catch(async (error) => {
+        if (
+          error instanceof Error &&
+          (error.message.includes("Account approval is pending.") ||
+            error.message.includes("Account access was rejected.") ||
+            error.message.includes("Account is inactive."))
+        ) {
+          await supabase.auth.signOut();
+          if (!cancelled) {
+            setHasSession(false);
+            setNickname("");
+            setRole(null);
+            setAlertCount(0);
+          }
+          return;
+        }
+
         if (!cancelled) {
           setNickname("");
           setRole(null);

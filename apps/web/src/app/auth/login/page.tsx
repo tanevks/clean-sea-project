@@ -1,17 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { fetchMe } from "../../../lib/api";
 import { useWebI18n } from "../../../lib/i18n";
 import { supabase } from "../../../lib/supabase";
 
+function mapBlockedAccountMessage(message: string) {
+  if (message.includes("Account approval is pending.")) {
+    return "Профилът ви очаква одобрение от администратор.";
+  }
+
+  if (message.includes("Account access was rejected.")) {
+    return "Достъпът до профила ви не е одобрен.";
+  }
+
+  if (message.includes("Account is inactive.")) {
+    return "Профилът е деактивиран.";
+  }
+
+  return message;
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useWebI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const notice = searchParams.get("notice");
+    if (notice) {
+      setErrorMessage(decodeURIComponent(notice));
+    }
+  }, [searchParams]);
 
   async function onLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,6 +49,19 @@ export default function LoginPage() {
       setErrorMessage(error.message);
       return;
     }
+
+    try {
+      await fetchMe();
+    } catch (profileError) {
+      const message =
+        profileError instanceof Error
+          ? mapBlockedAccountMessage(profileError.message)
+          : "Профилът не може да бъде използван в момента.";
+      await supabase.auth.signOut();
+      setErrorMessage(message);
+      return;
+    }
+
     router.push("/");
   }
 

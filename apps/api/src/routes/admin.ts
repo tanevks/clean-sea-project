@@ -18,6 +18,10 @@ const updateActiveSchema = z.object({
   isActive: z.boolean()
 });
 
+const updateApprovalSchema = z.object({
+  approvalStatus: z.enum(["pending", "approved", "rejected"])
+});
+
 const serviceAreaBodySchema = z.object({
   name: z.string().min(3).max(160),
   geojson: z.unknown(),
@@ -53,6 +57,7 @@ type ProfileRow = {
   display_name: string | null;
   phone: string | null;
   is_active: boolean;
+  approval_status: "pending" | "approved" | "rejected";
 };
 
 type ServiceAreaRow = {
@@ -400,7 +405,7 @@ adminRouter.get("/users", async (req, res) => {
 
   const { data: profiles, error: profilesError } = await supabaseAdmin
     .from("profiles")
-    .select("id, role, display_name, phone, is_active")
+    .select("id, role, display_name, phone, is_active, approval_status")
     .in("id", userIds);
 
   if (profilesError) {
@@ -430,6 +435,7 @@ adminRouter.get("/users", async (req, res) => {
           null,
         phone: profile?.phone ?? null,
         isActive: profile?.is_active ?? true,
+        approvalStatus: profile?.approval_status ?? "approved",
         createdAt: user.created_at,
         lastSignInAt: user.last_sign_in_at ?? null
       };
@@ -506,7 +512,7 @@ adminRouter.patch("/users/:id/role", async (req, res) => {
     .from("profiles")
     .update({ role: parsedBody.data.role })
     .eq("id", parsedParams.data.id)
-    .select("id, role, display_name, phone, is_active")
+    .select("id, role, display_name, phone, is_active, approval_status")
     .single();
 
   if (error) {
@@ -540,7 +546,104 @@ adminRouter.patch("/users/:id/role", async (req, res) => {
     role: data.role,
     displayName: data.display_name,
     phone: data.phone,
-    isActive: data.is_active
+    isActive: data.is_active,
+    approvalStatus: data.approval_status
+  });
+});
+
+adminRouter.patch("/users/:id/approval", async (req, res) => {
+  if (!requireAdmin(req.authUser?.role)) {
+    res.status(403).json({ error: "Admin access is required." });
+    return;
+  }
+
+  const parsedParams = userIdSchema.safeParse(req.params);
+  if (!parsedParams.success) {
+    res.status(400).json({
+      error: "Invalid user id.",
+      details: parsedParams.error.flatten()
+    });
+    return;
+  }
+
+  if (parsedParams.data.id === req.authUser?.id) {
+    res.status(400).json({ error: "You cannot change your own approval state here." });
+    return;
+  }
+
+  const parsedBody = updateApprovalSchema.safeParse(req.body);
+  if (!parsedBody.success) {
+    res.status(400).json({
+      error: "Invalid body.",
+      details: parsedBody.error.flatten()
+    });
+    return;
+  }
+
+  const approvalStatus = parsedBody.data.approvalStatus;
+  const isActive = approvalStatus === "approved";
+
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .update({
+      approval_status: approvalStatus,
+      is_active: isActive
+    })
+    .eq("id", parsedParams.data.id)
+    .select("id, role, display_name, phone, is_active, approval_status")
+    .single();
+
+  if (error) {
+    res.status(500).json({
+      error: "Failed to update approval state.",
+      details: error.message
+    });
+    return;
+  }
+
+  if (approvalStatus === "approved") {
+    await supabaseAdmin.from("user_notifications").insert({
+      user_id: parsedParams.data.id,
+      type: "account_approved",
+      title: "Account approved",
+      body: "Your profile has been approved by an administrator.",
+      metadata: {}
+    });
+  } else if (approvalStatus === "rejected") {
+    await supabaseAdmin.from("user_notifications").insert({
+      user_id: parsedParams.data.id,
+      type: "account_rejected",
+      title: "Account access rejected",
+      body: "Your registration was reviewed and access was not approved.",
+      metadata: {}
+    });
+  }
+
+  await writeAuditLog({
+    actorUserId: req.authUser!.id,
+    actorRole: req.authUser!.role,
+    action:
+      approvalStatus === "approved"
+        ? "user_approved"
+        : approvalStatus === "rejected"
+          ? "user_rejected"
+          : "user_marked_pending",
+    entityType: "user",
+    entityId: parsedParams.data.id,
+    targetUserId: parsedParams.data.id,
+    metadata: {
+      approvalStatus,
+      isActive
+    }
+  });
+
+  res.json({
+    id: data.id,
+    role: data.role,
+    displayName: data.display_name,
+    phone: data.phone,
+    isActive: data.is_active,
+    approvalStatus: data.approval_status
   });
 });
 
@@ -577,7 +680,7 @@ adminRouter.patch("/users/:id/active", async (req, res) => {
     .from("profiles")
     .update({ is_active: parsedBody.data.isActive })
     .eq("id", parsedParams.data.id)
-    .select("id, role, display_name, phone, is_active")
+    .select("id, role, display_name, phone, is_active, approval_status")
     .single();
 
   if (error) {
@@ -605,7 +708,8 @@ adminRouter.patch("/users/:id/active", async (req, res) => {
     role: data.role,
     displayName: data.display_name,
     phone: data.phone,
-    isActive: data.is_active
+    isActive: data.is_active,
+    approvalStatus: data.approval_status
   });
 });
 

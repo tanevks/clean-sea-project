@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
@@ -7,6 +7,7 @@ import {
   fetchAdminUsers,
   fetchMe,
   updateAdminUserActiveState,
+  updateAdminUserApprovalStatus,
   updateAdminUserRole,
   type AdminUserItem,
   type AuditLogItem
@@ -16,36 +17,37 @@ import { supabase } from "../../../lib/supabase";
 
 type AccessState = "unknown" | "anonymous" | "forbidden" | "allowed";
 type UserRole = AdminUserItem["role"];
+type ApprovalStatus = AdminUserItem["approvalStatus"];
 
 const copy = {
   bg: {
-    title: "Управление на потребители",
+    title: "РЈРїСЂР°РІР»РµРЅРёРµ РЅР° РїРѕС‚СЂРµР±РёС‚РµР»Рё",
     subtitle:
-      "Само admin може да управлява роли и активност. Тук се вижда и одит логът.",
-    users: "Потребители",
-    role: "Роля",
-    nickname: "Прякор",
-    phone: "Телефон",
-    email: "Имейл",
-    created: "Създаден",
-    lastSignIn: "Последен вход",
-    active: "Активен",
-    inactive: "Неактивен",
-    deactivate: "Деактивирай",
-    activate: "Активирай",
-    self: "Текущ профил",
-    noUsers: "Няма намерени потребители.",
-    save: "Запази",
-    saving: "Запазване...",
-    admin: "Админ",
-    moderator: "Модератор",
-    citizen: "Потребител",
-    adminRequired: "Само admin може да отваря тази секция.",
-    loginCta: "Към вход",
-    unknown: "Няма данни",
-    auditTitle: "Одит лог",
-    noAudit: "Все още няма действия за показване.",
-    actorFallback: "Системно действие"
+      "РЎР°РјРѕ admin РјРѕР¶Рµ РґР° СѓРїСЂР°РІР»СЏРІР° СЂРѕР»Рё Рё Р°РєС‚РёРІРЅРѕСЃС‚. РўСѓРє СЃРµ РІРёР¶РґР° Рё РѕРґРёС‚ Р»РѕРіСЉС‚.",
+    users: "РџРѕС‚СЂРµР±РёС‚РµР»Рё",
+    role: "Р РѕР»СЏ",
+    nickname: "РџСЂСЏРєРѕСЂ",
+    phone: "РўРµР»РµС„РѕРЅ",
+    email: "РРјРµР№Р»",
+    created: "РЎСЉР·РґР°РґРµРЅ",
+    lastSignIn: "РџРѕСЃР»РµРґРµРЅ РІС…РѕРґ",
+    active: "РђРєС‚РёРІРµРЅ",
+    inactive: "РќРµР°РєС‚РёРІРµРЅ",
+    deactivate: "Р”РµР°РєС‚РёРІРёСЂР°Р№",
+    activate: "РђРєС‚РёРІРёСЂР°Р№",
+    self: "РўРµРєСѓС‰ РїСЂРѕС„РёР»",
+    noUsers: "РќСЏРјР° РЅР°РјРµСЂРµРЅРё РїРѕС‚СЂРµР±РёС‚РµР»Рё.",
+    save: "Р—Р°РїР°Р·Рё",
+    saving: "Р—Р°РїР°Р·РІР°РЅРµ...",
+    admin: "РђРґРјРёРЅ",
+    moderator: "РњРѕРґРµСЂР°С‚РѕСЂ",
+    citizen: "РџРѕС‚СЂРµР±РёС‚РµР»",
+    adminRequired: "РЎР°РјРѕ admin РјРѕР¶Рµ РґР° РѕС‚РІР°СЂСЏ С‚Р°Р·Рё СЃРµРєС†РёСЏ.",
+    loginCta: "РљСЉРј РІС…РѕРґ",
+    unknown: "РќСЏРјР° РґР°РЅРЅРё",
+    auditTitle: "РћРґРёС‚ Р»РѕРі",
+    noAudit: "Р’СЃРµ РѕС‰Рµ РЅСЏРјР° РґРµР№СЃС‚РІРёСЏ Р·Р° РїРѕРєР°Р·РІР°РЅРµ.",
+    actorFallback: "РЎРёСЃС‚РµРјРЅРѕ РґРµР№СЃС‚РІРёРµ"
   },
   en: {
     title: "User Management",
@@ -98,6 +100,11 @@ export default function AdminUsersPage() {
       admin: text.admin
     }),
     [text]
+  );
+
+  const pendingUsersCount = useMemo(
+    () => users.filter((item) => item.approvalStatus === "pending").length,
+    [users]
   );
 
   async function loadData(options?: { silent?: boolean }) {
@@ -248,25 +255,64 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function onUpdateApprovalStatus(userId: string, approvalStatus: ApprovalStatus) {
+    setTogglingUserId(userId);
+    setErrorMessage("");
+
+    try {
+      const updated = await updateAdminUserApprovalStatus(userId, approvalStatus);
+      setUsers((currentUsers) =>
+        currentUsers.map((item) =>
+          item.id === userId
+            ? {
+                ...item,
+                approvalStatus: updated.approvalStatus,
+                isActive: updated.isActive
+              }
+            : item
+        )
+      );
+      await loadData({ silent: true });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to update approval state."
+      );
+    } finally {
+      setTogglingUserId("");
+    }
+  }
+
+  function formatApprovalStatus(status: ApprovalStatus) {
+    if (language === "bg") {
+      if (status === "pending") return "Р§Р°РєР° РѕРґРѕР±СЂРµРЅРёРµ";
+      if (status === "approved") return "РћРґРѕР±СЂРµРЅ";
+      return "РћС‚РєР°Р·Р°РЅ";
+    }
+
+    if (status === "pending") return "Pending";
+    if (status === "approved") return "Approved";
+    return "Rejected";
+  }
+
   function formatAction(item: AuditLogItem) {
     if (language === "bg") {
       switch (item.action) {
         case "user_role_changed":
-          return "Смяна на роля";
+          return "РЎРјСЏРЅР° РЅР° СЂРѕР»СЏ";
         case "user_activated":
-          return "Активиране на профил";
+          return "РђРєС‚РёРІРёСЂР°РЅРµ РЅР° РїСЂРѕС„РёР»";
         case "user_deactivated":
-          return "Деактивиране на профил";
+          return "Р”РµР°РєС‚РёРІРёСЂР°РЅРµ РЅР° РїСЂРѕС„РёР»";
         case "report_status_changed":
-          return "Смяна на статус на сигнал";
+          return "РЎРјСЏРЅР° РЅР° СЃС‚Р°С‚СѓСЃ РЅР° СЃРёРіРЅР°Р»";
         case "comment_hidden":
-          return "Скриване на коментар";
+          return "РЎРєСЂРёРІР°РЅРµ РЅР° РєРѕРјРµРЅС‚Р°СЂ";
         case "comment_unhidden":
-          return "Показване на коментар";
+          return "РџРѕРєР°Р·РІР°РЅРµ РЅР° РєРѕРјРµРЅС‚Р°СЂ";
         case "media_hidden":
-          return "Скриване на файл";
+          return "РЎРєСЂРёРІР°РЅРµ РЅР° С„Р°Р№Р»";
         case "media_unhidden":
-          return "Показване на файл";
+          return "РџРѕРєР°Р·РІР°РЅРµ РЅР° С„Р°Р№Р»";
         default:
           return item.action;
       }
@@ -328,8 +374,11 @@ export default function AdminUsersPage() {
         </div>
         <div style={styles.headerActions}>
           <span style={styles.countPill}>{users.length}</span>
+          {pendingUsersCount > 0 ? (
+            <span style={styles.pendingCountPill}>{pendingUsersCount}</span>
+          ) : null}
           <Link href="/admin/service-areas" style={styles.secondaryLink}>
-            Райони
+            Р Р°Р№РѕРЅРё
           </Link>
           <Link href="/moderation" style={styles.secondaryLink}>
             {t.home.moderation}
@@ -371,6 +420,20 @@ export default function AdminUsersPage() {
                     </div>
                     <span style={user.isActive ? styles.activePill : styles.inactivePill}>
                       {user.isActive ? text.active : text.inactive}
+                    </span>
+                  </div>
+
+                  <div style={styles.nameRow}>
+                    <span
+                      style={
+                        user.approvalStatus === "approved"
+                          ? styles.approvedPill
+                          : user.approvalStatus === "rejected"
+                            ? styles.rejectedPill
+                            : styles.pendingPill
+                      }
+                    >
+                      {formatApprovalStatus(user.approvalStatus)}
                     </span>
                   </div>
 
@@ -431,13 +494,68 @@ export default function AdminUsersPage() {
                     >
                       {savingUserId === user.id ? text.saving : text.save}
                     </button>
+                  </div>
+
+                  <div style={styles.actionRow}>
+                    <button
+                      type="button"
+                      onClick={() => void onUpdateApprovalStatus(user.id, "approved")}
+                      disabled={
+                        isSelf ||
+                        togglingUserId === user.id ||
+                        user.approvalStatus === "approved"
+                      }
+                      style={{
+                        ...styles.primaryButton,
+                        ...(isSelf ||
+                        togglingUserId === user.id ||
+                        user.approvalStatus === "approved"
+                          ? styles.buttonDisabled
+                          : null)
+                      }}
+                    >
+                      {togglingUserId === user.id
+                        ? text.saving
+                        : language === "bg"
+                          ? "Одобри"
+                          : "Approve"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void onUpdateApprovalStatus(user.id, "rejected")}
+                      disabled={
+                        isSelf ||
+                        togglingUserId === user.id ||
+                        user.approvalStatus === "rejected"
+                      }
+                      style={{
+                        ...styles.secondaryDangerButton,
+                        ...(isSelf ||
+                        togglingUserId === user.id ||
+                        user.approvalStatus === "rejected"
+                          ? styles.buttonDisabled
+                          : null)
+                      }}
+                    >
+                      {togglingUserId === user.id
+                        ? text.saving
+                        : language === "bg"
+                          ? "Откажи"
+                          : "Reject"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => void onToggleActive(user.id, !user.isActive)}
-                      disabled={isSelf || togglingUserId === user.id}
+                      disabled={
+                        isSelf ||
+                        togglingUserId === user.id ||
+                        user.approvalStatus !== "approved"
+                      }
                       style={{
                         ...styles.secondaryButton,
-                        ...(isSelf || togglingUserId === user.id
+                        ...(isSelf ||
+                        togglingUserId === user.id ||
+                        user.approvalStatus !== "approved"
                           ? styles.buttonDisabled
                           : null)
                       }}
@@ -624,6 +742,30 @@ const styles: Record<string, CSSProperties> = {
     color: "#64748b",
     fontSize: 13
   },
+  pendingPill: {
+    borderRadius: 999,
+    padding: "4px 10px",
+    backgroundColor: "#fef3c7",
+    color: "#92400e",
+    fontSize: 12,
+    fontWeight: 700
+  },
+  approvedPill: {
+    borderRadius: 999,
+    padding: "4px 10px",
+    backgroundColor: "#dcfce7",
+    color: "#166534",
+    fontSize: 12,
+    fontWeight: 700
+  },
+  rejectedPill: {
+    borderRadius: 999,
+    padding: "4px 10px",
+    backgroundColor: "#fee2e2",
+    color: "#b91c1c",
+    fontSize: 12,
+    fontWeight: 700
+  },
   infoGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -650,6 +792,14 @@ const styles: Record<string, CSSProperties> = {
   },
   roleField: {
     flex: 1
+  },
+  actionRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 12,
+    flexWrap: "wrap"
   },
   select: {
     width: "100%",
@@ -679,6 +829,16 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
     minWidth: 120
   },
+  secondaryDangerButton: {
+    padding: "10px 14px",
+    borderRadius: 12,
+    border: "1px solid #fecaca",
+    backgroundColor: "#fff1f2",
+    color: "#9f1239",
+    fontWeight: 700,
+    cursor: "pointer",
+    minWidth: 120
+  },
   buttonDisabled: {
     cursor: "not-allowed",
     opacity: 0.55
@@ -689,6 +849,16 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 999,
     backgroundColor: "#0b6bcb",
     color: "#ffffff",
+    fontSize: 12,
+    fontWeight: 700,
+    textAlign: "center"
+  },
+  pendingCountPill: {
+    minWidth: 28,
+    padding: "4px 10px",
+    borderRadius: 999,
+    backgroundColor: "#f59e0b",
+    color: "#111827",
     fontSize: 12,
     fontWeight: 700,
     textAlign: "center"
@@ -716,3 +886,4 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid #d7dbe0"
   }
 };
+

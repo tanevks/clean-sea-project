@@ -78,6 +78,36 @@ function AppShell() {
   const [focusedInitiativeId, setFocusedInitiativeId] = useState<string | null>(null);
   const [focusedInitiativeCommentId, setFocusedInitiativeCommentId] = useState<string | null>(null);
   const [focusedInitiativeNonce, setFocusedInitiativeNonce] = useState(0);
+  const [authNotice, setAuthNotice] = useState("");
+
+  const getBlockedAccountMessage = useCallback((error: unknown) => {
+    const message = error instanceof Error ? error.message : "";
+
+    if (message.includes("Account approval is pending.")) {
+      return "Профилът ви очаква одобрение от администратор.";
+    }
+
+    if (message.includes("Account access was rejected.")) {
+      return "Достъпът до профила ви не е одобрен.";
+    }
+
+    if (message.includes("Account is inactive.")) {
+      return "Профилът е деактивиран.";
+    }
+
+    return null;
+  }, []);
+
+  const handleBlockedAccount = useCallback(async (message?: string) => {
+    await signOut();
+    setIsAuthenticated(false);
+    setCurrentNickname("");
+    setUnreadNotificationCount(0);
+    setUnreadReportThreadCount(0);
+    setUnreadInitiativeThreadCount(0);
+    setScreen("login");
+    setAuthNotice(message ?? "Профилът ви очаква одобрение от администратор.");
+  }, []);
 
   const refreshUnreadNotificationCount = useCallback(async () => {
     try {
@@ -189,7 +219,13 @@ function AppShell() {
           setCurrentNickname(
             profile.nickname ?? profile.displayName ?? profile.email ?? ""
           );
-        } catch {
+        } catch (error) {
+          const blockedMessage = getBlockedAccountMessage(error);
+          if (blockedMessage) {
+            await handleBlockedAccount(blockedMessage);
+            setIsBootstrapping(false);
+            return;
+          }
           setCurrentNickname("");
         }
         await refreshUnreadNotificationCount();
@@ -227,8 +263,14 @@ function AppShell() {
           setCurrentNickname(
             profile.nickname ?? profile.displayName ?? profile.email ?? ""
           );
+          setAuthNotice("");
         })
-        .catch(() => {
+        .catch((error) => {
+          const blockedMessage = getBlockedAccountMessage(error);
+          if (blockedMessage) {
+            void handleBlockedAccount(blockedMessage);
+            return;
+          }
           setCurrentNickname("");
         });
       void refreshUnreadNotificationCount();
@@ -244,7 +286,9 @@ function AppShell() {
   }, [
     refreshUnreadInitiativeThreadCount,
     refreshUnreadNotificationCount,
-    refreshUnreadReportThreadCount
+    refreshUnreadReportThreadCount,
+    getBlockedAccountMessage,
+    handleBlockedAccount
   ]);
 
   useEffect(() => {
@@ -319,10 +363,6 @@ function AppShell() {
       content = (
         <SignUpScreen
           onBackToLogin={() => setScreen("login")}
-          onSignedUp={() => {
-            setIsAuthenticated(true);
-            setActiveTab("reports");
-          }}
         />
       );
     } else if (screen === "forgot") {
@@ -330,9 +370,14 @@ function AppShell() {
     } else {
       content = (
         <LoginScreen
-          onOpenSignUp={() => setScreen("signup")}
+          noticeMessage={authNotice}
+          onOpenSignUp={() => {
+            setAuthNotice("");
+            setScreen("signup");
+          }}
           onOpenForgotPassword={() => setScreen("forgot")}
           onLoggedIn={() => {
+            setAuthNotice("");
             setIsAuthenticated(true);
             setActiveTab("reports");
           }}

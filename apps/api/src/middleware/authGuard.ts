@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import type { UserRole } from "../types/auth";
+import type { ApprovalStatus, UserRole } from "../types/auth";
 import { supabaseAdmin } from "../lib/supabaseAdmin";
 
 function parseBearerToken(authHeader?: string): string | null {
@@ -21,15 +21,19 @@ function resolveRoleFromToken(
 
 async function resolveProfileState(
   userId: string
-): Promise<{ role: UserRole | null; isActive: boolean | null }> {
+): Promise<{
+  role: UserRole | null;
+  isActive: boolean | null;
+  approvalStatus: ApprovalStatus | null;
+}> {
   const { data, error } = await supabaseAdmin
     .from("profiles")
-    .select("role, is_active")
+    .select("role, is_active, approval_status")
     .eq("id", userId)
     .maybeSingle();
 
   if (error || !data) {
-    return { role: null, isActive: null };
+    return { role: null, isActive: null, approvalStatus: null };
   }
 
   const role =
@@ -39,7 +43,13 @@ async function resolveProfileState(
 
   return {
     role,
-    isActive: typeof data.is_active === "boolean" ? data.is_active : null
+    isActive: typeof data.is_active === "boolean" ? data.is_active : null,
+    approvalStatus:
+      data.approval_status === "pending" ||
+      data.approval_status === "approved" ||
+      data.approval_status === "rejected"
+        ? data.approval_status
+        : null
   };
 }
 
@@ -62,6 +72,16 @@ export async function authGuard(
 
   const profileState = await resolveProfileState(data.user.id);
 
+  if (profileState.approvalStatus === "pending") {
+    res.status(403).json({ error: "Account approval is pending." });
+    return;
+  }
+
+  if (profileState.approvalStatus === "rejected") {
+    res.status(403).json({ error: "Account access was rejected." });
+    return;
+  }
+
   if (profileState.isActive === false) {
     res.status(403).json({ error: "Account is inactive." });
     return;
@@ -74,7 +94,8 @@ export async function authGuard(
       profileState.role ??
       resolveRoleFromToken(data.user.app_metadata)
     ,
-    isActive: profileState.isActive ?? true
+    isActive: profileState.isActive ?? true,
+    approvalStatus: profileState.approvalStatus ?? "approved"
   };
 
   next();

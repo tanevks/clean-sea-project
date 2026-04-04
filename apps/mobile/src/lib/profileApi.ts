@@ -6,6 +6,8 @@ export type MobileProfile = {
   id: string;
   email: string | null;
   role: "citizen" | "moderator" | "admin";
+  approvalStatus: "pending" | "approved" | "rejected";
+  isActive: boolean;
   displayName?: string | null;
   nickname?: string | null;
   phone?: string | null;

@@ -48,7 +48,8 @@ export default function SignUpPage() {
       return;
     }
 
-    setMessage(t.auth.accountCreated);
+    await supabase.auth.signOut();
+    setMessage("Профилът е създаден и очаква одобрение от администратор.");
   }
 
   async function onGoogleSignUp() {
