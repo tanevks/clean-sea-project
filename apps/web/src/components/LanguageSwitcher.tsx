@@ -35,21 +35,52 @@ export function LanguageSwitcher() {
   useEffect(() => {
     let mounted = true;
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (mounted) {
-        setHasSession(Boolean(data.session));
+    async function syncSessionState() {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        if (mounted) {
+          setHasSession(false);
+          setNickname("");
+          setRole(null);
+          setAlertCount(0);
+        }
+        return;
       }
-    });
+
+      const { data, error } = await supabase.auth.getUser();
+      const hasValidUser = Boolean(data.user) && !error;
+
+      if (!hasValidUser) {
+        await supabase.auth.signOut();
+      }
+
+      if (mounted) {
+        setHasSession(hasValidUser);
+        if (!hasValidUser) {
+          setNickname("");
+          setRole(null);
+          setAlertCount(0);
+        }
+      }
+    }
+
+    void syncSessionState();
 
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setHasSession(Boolean(session));
       if (!session) {
+        setHasSession(false);
         setNickname("");
         setRole(null);
         setAlertCount(0);
+        return;
       }
+
+      void syncSessionState();
     });
 
     return () => {
