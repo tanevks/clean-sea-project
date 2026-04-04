@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchMe } from "../../../lib/api";
 import { useWebI18n } from "../../../lib/i18n";
@@ -23,7 +23,7 @@ function mapBlockedAccountMessage(message: string) {
   return message;
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useWebI18n();
@@ -117,5 +117,19 @@ export default function LoginPage() {
         <Link href="/auth/sign-up">{t.auth.createAccount}</Link>
       </p>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main style={{ maxWidth: 420, margin: "48px auto", padding: "0 16px" }}>
+          <p>Loading...</p>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
