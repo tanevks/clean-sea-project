@@ -1,5 +1,4 @@
 import { Platform } from "react-native";
-import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import type { AuthError, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
@@ -218,22 +217,9 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     };
   }
 
-  if (Platform.OS === "android") {
-    await Linking.openURL(data.url);
-    return {
-      user: null,
-      error: null,
-      hasSession: false,
-      pendingExternalAuth: true
-    };
-  }
-
   const authStatePromise = waitForAuthStateUser();
-
-  const authSession = await WebBrowser.openAuthSessionAsync(
-    data.url,
-    appAuthCallbackUrl
-  );
+  const redirectUrl = Platform.OS === "android" ? authCallbackUrl : appAuthCallbackUrl;
+  const authSession = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
   if (authSession.type === "success" && authSession.url) {
     const result = await completeAuthSessionFromUrl(authSession.url);
@@ -249,6 +235,15 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     }
   }
 
+  if (authSession.type === "cancel" || authSession.type === "dismiss") {
+    return {
+      user: null,
+      error: ({ message: "Google sign-in did not complete." } as AuthError),
+      hasSession: false,
+      pendingExternalAuth: false
+    };
+  }
+
   const user = (await authStatePromise) ?? (await waitForUserSession(1500));
   if (user) {
     return {
@@ -261,10 +256,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
   return {
     user: null,
-    error:
-      authSession.type === "cancel" || authSession.type === "dismiss"
-        ? ({ message: "Google sign-in did not complete." } as AuthError)
-        : null,
+    error: null,
     hasSession: false,
     pendingExternalAuth: false
   };
