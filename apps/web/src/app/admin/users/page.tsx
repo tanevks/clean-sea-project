@@ -21,33 +21,33 @@ type ApprovalStatus = AdminUserItem["approvalStatus"];
 
 const copy = {
   bg: {
-    title: "РЈРїСЂР°РІР»РµРЅРёРµ РЅР° РїРѕС‚СЂРµР±РёС‚РµР»Рё",
+    title: "Управление на потребители",
     subtitle:
-      "РЎР°РјРѕ admin РјРѕР¶Рµ РґР° СѓРїСЂР°РІР»СЏРІР° СЂРѕР»Рё Рё Р°РєС‚РёРІРЅРѕСЃС‚. РўСѓРє СЃРµ РІРёР¶РґР° Рё РѕРґРёС‚ Р»РѕРіСЉС‚.",
-    users: "РџРѕС‚СЂРµР±РёС‚РµР»Рё",
-    role: "Р РѕР»СЏ",
-    nickname: "РџСЂСЏРєРѕСЂ",
-    phone: "РўРµР»РµС„РѕРЅ",
-    email: "РРјРµР№Р»",
-    created: "РЎСЉР·РґР°РґРµРЅ",
-    lastSignIn: "РџРѕСЃР»РµРґРµРЅ РІС…РѕРґ",
-    active: "РђРєС‚РёРІРµРЅ",
-    inactive: "РќРµР°РєС‚РёРІРµРЅ",
-    deactivate: "Р”РµР°РєС‚РёРІРёСЂР°Р№",
-    activate: "РђРєС‚РёРІРёСЂР°Р№",
-    self: "РўРµРєСѓС‰ РїСЂРѕС„РёР»",
-    noUsers: "РќСЏРјР° РЅР°РјРµСЂРµРЅРё РїРѕС‚СЂРµР±РёС‚РµР»Рё.",
-    save: "Р—Р°РїР°Р·Рё",
-    saving: "Р—Р°РїР°Р·РІР°РЅРµ...",
-    admin: "РђРґРјРёРЅ",
-    moderator: "РњРѕРґРµСЂР°С‚РѕСЂ",
-    citizen: "РџРѕС‚СЂРµР±РёС‚РµР»",
-    adminRequired: "РЎР°РјРѕ admin РјРѕР¶Рµ РґР° РѕС‚РІР°СЂСЏ С‚Р°Р·Рё СЃРµРєС†РёСЏ.",
-    loginCta: "РљСЉРј РІС…РѕРґ",
-    unknown: "РќСЏРјР° РґР°РЅРЅРё",
-    auditTitle: "РћРґРёС‚ Р»РѕРі",
-    noAudit: "Р’СЃРµ РѕС‰Рµ РЅСЏРјР° РґРµР№СЃС‚РІРёСЏ Р·Р° РїРѕРєР°Р·РІР°РЅРµ.",
-    actorFallback: "РЎРёСЃС‚РµРјРЅРѕ РґРµР№СЃС‚РІРёРµ"
+      "Само admin може да управлява роли и активност на профилите. Тук се вижда и одит логът.",
+    users: "Потребители",
+    role: "Роля",
+    nickname: "Прякор",
+    phone: "Телефон",
+    email: "Имейл",
+    created: "Създаден",
+    lastSignIn: "Последен вход",
+    active: "Активен",
+    inactive: "Неактивен",
+    deactivate: "Деактивирай",
+    activate: "Активирай",
+    self: "Текущ профил",
+    noUsers: "Няма намерени потребители.",
+    save: "Запази",
+    saving: "Запазване...",
+    admin: "Админ",
+    moderator: "Модератор",
+    citizen: "Потребител",
+    adminRequired: "Само admin може да отваря тази секция.",
+    loginCta: "Към вход",
+    unknown: "Няма данни",
+    auditTitle: "Одит лог",
+    noAudit: "Все още няма действия за показване.",
+    actorFallback: "Системно действие"
   },
   en: {
     title: "User Management",
@@ -284,9 +284,9 @@ export default function AdminUsersPage() {
 
   function formatApprovalStatus(status: ApprovalStatus) {
     if (language === "bg") {
-      if (status === "pending") return "Р§Р°РєР° РѕРґРѕР±СЂРµРЅРёРµ";
-      if (status === "approved") return "РћРґРѕР±СЂРµРЅ";
-      return "РћС‚РєР°Р·Р°РЅ";
+      if (status === "pending") return "Чака одобрение";
+      if (status === "approved") return "Одобрен";
+      return "Отказан";
     }
 
     if (status === "pending") return "Pending";
@@ -298,21 +298,27 @@ export default function AdminUsersPage() {
     if (language === "bg") {
       switch (item.action) {
         case "user_role_changed":
-          return "РЎРјСЏРЅР° РЅР° СЂРѕР»СЏ";
+          return "Смяна на роля";
         case "user_activated":
-          return "РђРєС‚РёРІРёСЂР°РЅРµ РЅР° РїСЂРѕС„РёР»";
+          return "Активиране на профил";
         case "user_deactivated":
-          return "Р”РµР°РєС‚РёРІРёСЂР°РЅРµ РЅР° РїСЂРѕС„РёР»";
+          return "Деактивиране на профил";
+        case "user_approved":
+          return "Одобряване на профил";
+        case "user_rejected":
+          return "Отказ на профил";
+        case "user_marked_pending":
+          return "Профилът чака одобрение";
         case "report_status_changed":
-          return "РЎРјСЏРЅР° РЅР° СЃС‚Р°С‚СѓСЃ РЅР° СЃРёРіРЅР°Р»";
+          return "Смяна на статус на сигнал";
         case "comment_hidden":
-          return "РЎРєСЂРёРІР°РЅРµ РЅР° РєРѕРјРµРЅС‚Р°СЂ";
+          return "Скриване на коментар";
         case "comment_unhidden":
-          return "РџРѕРєР°Р·РІР°РЅРµ РЅР° РєРѕРјРµРЅС‚Р°СЂ";
+          return "Показване на коментар";
         case "media_hidden":
-          return "РЎРєСЂРёРІР°РЅРµ РЅР° С„Р°Р№Р»";
+          return "Скриване на файл";
         case "media_unhidden":
-          return "РџРѕРєР°Р·РІР°РЅРµ РЅР° С„Р°Р№Р»";
+          return "Показване на файл";
         default:
           return item.action;
       }
@@ -378,7 +384,7 @@ export default function AdminUsersPage() {
             <span style={styles.pendingCountPill}>{pendingUsersCount}</span>
           ) : null}
           <Link href="/admin/service-areas" style={styles.secondaryLink}>
-            Р Р°Р№РѕРЅРё
+            Райони
           </Link>
           <Link href="/moderation" style={styles.secondaryLink}>
             {t.home.moderation}
